@@ -43,6 +43,8 @@ export type StateProps = {
   isForceThirdParty: boolean;
   bridgeInputAmount: string;
   setBridgeInputAmount: Dispatch<SetStateAction<string>>;
+  recipient: string;
+  setRecipient: Dispatch<SetStateAction<string>>;
 };
 
 export const StateProviderContext = createContext<StateProps>({} as StateProps);
@@ -66,6 +68,9 @@ const StateProvider = ({ children }: { children: ReactNode }) => {
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [selectedBridgeOption, setSelectedBridgeOption] = useState(0);
   const [bridgeInputAmount, setBridgeInputAmount] = useState("");
+
+  const [recipient, setRecipient] = useState("");
+
   const [selectedChainId, setSelectedChainId] = useState({
     from: 11155111,
     to: 5003,
@@ -139,6 +144,8 @@ const StateProvider = ({ children }: { children: ReactNode }) => {
       setSelectedToken,
       bridgeInputAmount,
       setBridgeInputAmount,
+      recipient,
+      setRecipient,
     } satisfies StateProps;
   }, [
     publicClient,
@@ -156,6 +163,8 @@ const StateProvider = ({ children }: { children: ReactNode }) => {
     setSelectedToken,
     bridgeInputAmount,
     setBridgeInputAmount,
+    recipient,
+    setRecipient,
   ]);
 
   return (

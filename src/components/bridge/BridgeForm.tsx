@@ -1,3 +1,5 @@
+"use client";
+
 import BridgeChainCard from "./BridgeChainCard";
 import { useContext, useState } from "react";
 import SwitchDirection from "./SwitchDirection";
@@ -5,9 +7,13 @@ import SelectTokenInput from "./SelectTokenInput";
 import { Button } from "../ui/button";
 import { StateProviderContext } from "../provider/StateProvider";
 import BridgeActionBtn from "./BridgeActionBtn";
+import { Input } from "../ui/input";
+import { getAddress } from "viem";
 
 const BridgeForm = () => {
   const [isSwap, setIsSwap] = useState(false);
+
+  const { recipient, setRecipient } = useContext(StateProviderContext);
 
   return (
     <div
@@ -36,6 +42,16 @@ const BridgeForm = () => {
         <div>
           <SelectTokenInput />
         </div>
+
+        <div>
+          <Input
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            placeholder="Insert Recipient"
+          />
+          <span>Insert valid recipient address only</span>
+        </div>
+
         <BridgeActionBtn />
       </div>
     </div>

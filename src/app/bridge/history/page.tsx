@@ -53,7 +53,7 @@ const HistoryPage = () => {
           address: address!,
           testnet: checkIsTestnet(chain!.id) ? "true" : "false",
           page: "1",
-          pageSize: "10",
+          pageSize: "50",
         },
       });
 
@@ -100,9 +100,16 @@ const HistoryPage = () => {
         withdrawal,
       });
 
+      const gas = await sepoliaClient.estimateProveWithdrawalGas(args);
+
+      console.log({ gas });
+
       const hash = await walletClient
         .extend(walletActionsL1())
-        .proveWithdrawal(args as any);
+        .proveWithdrawal({
+          gas,
+          ...args,
+        });
 
       console.log({ hash });
 
@@ -140,11 +147,20 @@ const HistoryPage = () => {
 
       console.log({ withdrawal });
 
+      const gas = await sepoliaClient.estimateFinalizeWithdrawalGas({
+        withdrawal,
+        account: address!,
+        targetChain: mantleSepoliaClient.chain,
+      });
+
+      console.log({ gas });
+
       const hash = await walletClient
         .extend(walletActionsL1())
         .finalizeWithdrawal({
           targetChain: mantleSepoliaClient.chain,
           withdrawal,
+          gas,
         });
 
       console.log({ hash });

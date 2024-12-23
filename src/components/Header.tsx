@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
 
 const ThemeToggle = dynamic(() => import("./ThemeToggle"), { ssr: false });
 
@@ -72,6 +73,7 @@ const Header = () => {
           </nav>
           <div className="flex items-center justify-end space-x-4 flex-1">
             <ThemeToggle />
+            {/* <DynamicWidget /> */}
             <ConnectButton />
           </div>
         </div>

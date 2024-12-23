@@ -30,6 +30,12 @@ import { createConfig, WagmiProvider } from "wagmi";
 import { ReactNode, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { LinkComponent } from "../LinkComponent";
+import {
+  DynamicContextProvider,
+  DynamicWidget,
+} from "@dynamic-labs/sdk-react-core";
+import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
+import { DynamicWagmiConnector } from "@dynamic-labs/wagmi-connector";
 
 const { chains, transports } = walletConfig;
 const connectors = connectorsForWallets(
@@ -74,6 +80,12 @@ export const wagmiConfig = createConfig({
   multiInjectedProviderDiscovery: true,
 });
 
+export const wagmiConfigNew = createConfig({
+  multiInjectedProviderDiscovery: false,
+  chains,
+  transports,
+});
+
 const queryClient = new QueryClient();
 
 const Disclaimer: DisclaimerComponent = function Disclaimer({ Text, Link }) {
@@ -116,6 +128,28 @@ const WalletProvider = ({ children }: { children: ReactNode }) => {
       overlayBlur: "none",
     });
   }, [theme]);
+
+  // return (
+  //   <DynamicContextProvider
+  //     settings={{
+  //       initialAuthenticationMode: "connect-only",
+  //       // Find your environment id at https://app.dynamic.xyz/dashboard/developer
+  //       environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID!,
+  //       walletConnectors: [EthereumWalletConnectors],
+  //     }}
+  //   >
+  //     <WagmiProvider config={wagmiConfigNew}>
+  //       <QueryClientProvider client={queryClient}>
+  //         <DynamicWagmiConnector>
+  //           {children}
+  //           {/* <DynamicWidget />
+
+  //           <div>hello world</div> */}
+  //         </DynamicWagmiConnector>
+  //       </QueryClientProvider>
+  //     </WagmiProvider>
+  //   </DynamicContextProvider>
+  // );
 
   return (
     <WagmiProvider config={wagmiConfig}>

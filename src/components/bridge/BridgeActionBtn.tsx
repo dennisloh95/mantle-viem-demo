@@ -13,12 +13,30 @@ import {
   serializeTransaction,
   publicActionsL1,
   waitToProve,
+  publicActionsL2,
 } from "mantle-viem-test";
 import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
-import { Chain, createPublicClient, http, keccak256, parseUnits } from "viem";
+import {
+  Chain,
+  createPublicClient,
+  http,
+  isAddress,
+  keccak256,
+  parseUnits,
+} from "viem";
 import { supportedChains } from "@/config/chains";
 import { mantleSepoliaTestnet } from "mantle-viem-test/chains";
 import { sepolia } from "viem/chains";
+
+const sepoliaClient = createPublicClient({
+  chain: sepolia,
+  transport: http(`/api/rpc/${sepolia.id}`),
+}).extend(publicActionsL1());
+
+const mantleSepoliaClient = createPublicClient({
+  chain: mantleSepoliaTestnet,
+  transport: http(`/api/rpc/${mantleSepoliaTestnet.id}`),
+}).extend(publicActionsL2());
 
 const BridgeActionBtn = () => {
   const {
@@ -28,11 +46,12 @@ const BridgeActionBtn = () => {
     selectedChainId,
     selectedTokenPair,
     publicClient,
+    recipient,
   } = useContext(StateProviderContext);
   const { data: walletClient } = useWalletClient();
   const [isLoading, setIsLoading] = useState(false);
   const { chains, switchChainAsync } = useSwitchChain();
-  const { chain } = useAccount();
+  const { chain, address } = useAccount();
 
   const handleBridge = async () => {
     if (chain?.id !== selectedChainId.from) {
@@ -54,36 +73,63 @@ const BridgeActionBtn = () => {
       bridgeInputAmount
     ) {
       if (isWithdraw) {
+        let request = {
+          amount: parseUnits(bridgeInputAmount, selectedToken.decimals),
+          to: isAddress(recipient) ? recipient : undefined,
+        };
+
         try {
           setIsLoading(true);
           let hash;
           if (selectedToken?.symbol === "MNT") {
+            const gas =
+              await mantleSepoliaClient.estimateInitiateMNTWithdrawalGas({
+                request,
+                account: address!,
+              });
+
+            console.log({ gas });
+
             hash = await walletClient
               .extend(walletActionsL2())
               .initiateMNTWithdrawal({
-                request: {
-                  amount: parseUnits(bridgeInputAmount, selectedToken.decimals),
-                },
+                request,
+                gas,
               });
           } else if (selectedToken?.symbol === "ETH") {
+            const gas =
+              await mantleSepoliaClient.estimateInitiateETHWithdrawalGas({
+                request,
+                account: address!,
+              });
+
+            console.log({ gas });
+
             hash = await walletClient
               .extend(walletActionsL2())
               .initiateETHWithdrawal({
-                request: {
-                  amount: parseUnits(bridgeInputAmount, selectedToken.decimals),
-                },
+                request,
+                gas,
               });
           } else {
+            // @ts-ignore
+            request.l2Token = selectedToken.address;
+
+            const gas =
+              await mantleSepoliaClient.estimateInitiateERC20Withdrawal({
+                // @ts-ignore
+                request,
+                account: address!,
+              });
+
+            console.log({ gas });
+
             hash = await walletClient
               .extend(walletActionsL2())
               .initiateERC20Withdrawal({
-                request: {
-                  l2Token: selectedToken.address,
-                  amount: parseUnits(
-                    bridgeInputAmount,
-                    selectedToken!.decimals
-                  ),
-                },
+                // @ts-ignore
+                request,
+                gas,
               });
           }
 
@@ -125,28 +171,60 @@ const BridgeActionBtn = () => {
         try {
           setIsLoading(true);
           let hash;
+
+          let request = {
+            amount: parseUnits(bridgeInputAmount, selectedToken.decimals),
+            to: isAddress(recipient) ? recipient : undefined,
+          };
+
           if (selectedToken?.symbol === "MNT") {
-            hash = await walletClient.extend(walletActionsL1()).depositMNT({
-              request: {
-                amount: parseUnits(bridgeInputAmount, selectedToken.decimals),
-              },
+            const gas = await sepoliaClient.estimateDepositMNTGas({
+              request,
               targetChain: supportedChains[selectedChainId.to] as any,
+              account: address!,
+            });
+
+            console.log({ gas });
+
+            hash = await walletClient.extend(walletActionsL1()).depositMNT({
+              request,
+              targetChain: supportedChains[selectedChainId.to] as any,
+              gas,
             });
           } else if (selectedToken?.symbol === "ETH") {
-            hash = await walletClient.extend(walletActionsL1()).depositETH({
-              request: {
-                amount: parseUnits(bridgeInputAmount, selectedToken.decimals),
-              },
+            const gas = await sepoliaClient.estimateDepositETHGas({
+              request,
               targetChain: supportedChains[selectedChainId.to] as any,
+              account: address!,
+            });
+
+            console.log({ gas });
+
+            hash = await walletClient.extend(walletActionsL1()).depositETH({
+              request,
+              targetChain: supportedChains[selectedChainId.to] as any,
+              gas,
             });
           } else {
-            hash = await walletClient.extend(walletActionsL1()).depositERC20({
-              request: {
-                l1Token: selectedToken.address,
-                l2Token: selectedTokenPair?.address,
-                amount: parseUnits(bridgeInputAmount, selectedToken!.decimals),
-              },
+            // @ts-ignore
+            request.l1Token = selectedToken.address;
+            // @ts-ignore
+            request.l2Token = selectedTokenPair?.address;
+
+            const gas = await sepoliaClient.estimateDepositERC20Gas({
+              // @ts-ignore
+              request,
               targetChain: supportedChains[selectedChainId.to] as any,
+              account: address!,
+            });
+
+            console.log({ gas });
+
+            hash = await walletClient.extend(walletActionsL1()).depositERC20({
+              // @ts-ignore
+              request,
+              targetChain: supportedChains[selectedChainId.to] as any,
+              gas,
             });
           }
 
